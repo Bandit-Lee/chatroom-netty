@@ -1,1 +1,18 @@
+server:
+  port: 8080
 
+chatroom:
+  server:
+    port: 20000
+    path: /websocket
+
+# thymeleaf
+spring:
+  thymeleaf:
+    cache: false
+    checktemplatelocation: true
+    enabled: true
+    encoding: UTF-8
+    mode: HTML5
+    prefix: classpath:/templates/
+    suffix: .html

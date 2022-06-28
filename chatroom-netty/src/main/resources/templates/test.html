@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+<form onsubmit="return false;">
+    <input type="text" name="message" value="测试"/>
+    <br>
+    <input type="button" value="发送" onclick="send(this.form.message.value)" />
+    <br>
+    <h3>响应如下</h3>
+    <textarea id="responseText" style="width: 500px; height: 300px"></textarea>
+</form>
+<script type="text/javascript">
+    var socket;
+    if (!window.WebSocket) {
+        window.WebSocket = window.MozWebSocket;
+    }
+    if (window.WebSocket) {
+        socket = new WebSocket("ws://localhost:20000/websocket")
+        socket.onmessage = (event) => {
+            let textarea = document.getElementById('responseText');
+            textarea.value += event.data + "\n";
+        }
+        socket.onopen = (event) => {
+            let textarea = document.getElementById('responseText');
+            textarea.value = "打开WebSocket正常\n";
+        }
+        socket.onclose = (event) => {
+            let textarea = document.getElementById('responseText');
+            textarea.value += "关闭WebSocket\n";
+        }
+    } else {
+        alert("浏览器不支持WebSocket")
+    }
+
+    function send(message) {
+        if (!window.WebSocket) {return;}
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(message);
+        } else {
+            alert("连接失败")
+        }
+    }
+</script>
+</body>
+</html>

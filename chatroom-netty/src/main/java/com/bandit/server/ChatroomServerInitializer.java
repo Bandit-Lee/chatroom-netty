@@ -1,7 +1,7 @@
 package com.bandit.server;
 
 import com.bandit.handler.ChatroomServerHandler;
-import com.bandit.handler.WebSocketServerHandler;
+import com.bandit.handler.WebSocketRequestHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class ChatroomServerInitializer extends ChannelInitializer<SocketChannel> {
 
     @Autowired
-    private WebSocketServerHandler webSocketServerHandler;
+    private WebSocketRequestHandler webSocketRequestHandler;
 
     @Autowired
     private ChatroomServerHandler chatroomServerHandler;
@@ -34,7 +34,7 @@ public class ChatroomServerInitializer extends ChannelInitializer<SocketChannel>
         //HttpObjectAggregator：将Http消息多个部分组合成一条完整的Http消息
         pipeline.addLast("aggregator", new HttpObjectAggregator(65536));
         //TODO 添加WebSocket支持
-        pipeline.addLast("ws-handler",webSocketServerHandler);
+        pipeline.addLast("ws-request-handler", webSocketRequestHandler);
         //添加自定义WebSocket消息处理器
         pipeline.addLast("ws-message-handler", chatroomServerHandler);
     }

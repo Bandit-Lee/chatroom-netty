@@ -15,4 +15,9 @@ public class TestController {
         return "test";
     }
 
+    @GetMapping("/chatroom")
+    public String chatroom() {
+        return "chatroom";
+    }
+
 }

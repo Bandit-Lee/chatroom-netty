@@ -3,7 +3,6 @@ package com.bandit.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.handler.codec.HeadersUtils;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.ReferenceCountUtil;
@@ -22,21 +21,36 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> {
+public class WebSocketRequestHandler extends SimpleChannelInboundHandler<Object> {
 
     private WebSocketServerHandshaker handshaker;
 
     @Value("${chatroom.server.path}")
     private String webSocketPath;
 
+    /**
+     * @param ctx
+     * @throws Exception
+     */
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+    }
+
+    /**
+     * 有请求来的时候，将Http请求转换为WebSocket，如果是WebSocket就开始建立连接
+     * @param ctx           the {@link ChannelHandlerContext} which this {@link SimpleChannelInboundHandler}
+     *                      belongs to
+     * @param msg           the message to handle
+     * @throws Exception
+     */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof FullHttpRequest) {
-            log.info("http upgrade");
             //需要处理Http到WebSocket的升级
+            log.info("Http upgrade");
             handleHttpRequest(ctx, (FullHttpRequest) msg);
         } else if (msg instanceof WebSocketFrame) {
-            log.info("now start websocket connect");
             handleHttpWebSocket(ctx, (WebSocketFrame) msg);
         }
     }
@@ -68,8 +82,10 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         if (!(frame instanceof TextWebSocketFrame)) {
             throw new UnsupportedOperationException(String.format("%s frame types not supported", frame.getClass().getName()));
         }
+        //解决 refCnt: 0, decrement: 1
+        ReferenceCountUtil.retain(frame);
         //通知后续的消息处理器
-        ctx.fireChannelRead(frame.retain());
+        ctx.fireChannelRead(frame);
     }
 
     /**

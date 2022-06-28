@@ -11,7 +11,8 @@ import java.io.Serializable;
 @Data
 public class Message implements Serializable {
 
-    //TODO 后期优化属性
+    // TODO 后期优化属性
+
 
     /**
      * 消息的id
@@ -19,9 +20,9 @@ public class Message implements Serializable {
     private Long id;
 
     /**
-     * 消息类型
+     * 消息类型 1:建立连接； 2:发消息
      */
-    private String type;
+    private Integer type;
 
     /**
      * 消息内容
@@ -29,7 +30,7 @@ public class Message implements Serializable {
     private String content;
 
     /**
-     * 消息发生者
+     * 消息发送者
      */
     private String sender;
 

@@ -2,15 +2,19 @@ package com.bandit.handler;
 
 import com.alibaba.fastjson.JSON;
 import com.bandit.entity.Message;
+import com.bandit.entity.MessageType;
+import com.bandit.entity.User;
+import com.bandit.service.RoomServiceImpl;
+import com.bandit.service.UserServiceImpl;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -23,20 +27,32 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
-    /**
-     * 用户名到Channel上下文的映射
-     */
-    private static final Map<String,ChannelHandlerContext> USER2CHANNEL_CTX = new ConcurrentHashMap<>(16);
+    @Autowired
+    UserServiceImpl userService;
+
+    @Autowired
+    RoomServiceImpl roomService;
 
     /**
-     * channel ID 到 用户名的 映射
+     * 用户到 Channel上下文的映射
      */
-    private static final Map<ChannelId, String> CHANNEL_ID2USER = new ConcurrentHashMap<>(16);
+    private static final Map<User,ChannelHandlerContext> USER2CHANNEL_CTX = new ConcurrentHashMap<>(16);
+
+    /**
+     * channel ID 到 用户id 的 映射
+     */
+    private static final Map<ChannelId, User> CHANNEL_ID2USER = new ConcurrentHashMap<>(16);
 
     /**
      * 已经连接到服务器的所有Channel上下文
      */
     private static final List<ChannelHandlerContext> CONNECTED_CHANNEL_CTX = new CopyOnWriteArrayList<>();
+
+    /**
+     * 上线时 加入房间的用户
+     */
+    private static Map<Long, CopyOnWriteArrayList<User>> roomStubMap = new ConcurrentHashMap<>(16);
+
 
 
     /**
@@ -47,9 +63,10 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.info("A Channel Registering.");
-        CONNECTED_CHANNEL_CTX.add(ctx);
+        handleLogin(ctx);
         ctx.fireChannelActive();
     }
+
 
     /**
      * 下线
@@ -73,6 +90,7 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame frame) throws Exception {
         log.info("Receive Client: " + frame.text());
+        //TODO 这里可以交给一个线程写入数据库
         Message message = JSON.parseObject(frame.text(), Message.class);
         handleMessage(ctx, message);
     }
@@ -85,27 +103,39 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
     }
 
     /**
+     * 处理上线
+     * @param ctx
+     */
+    private void handleLogin(ChannelHandlerContext ctx) {
+        log.info("Created a Channel.");
+        CONNECTED_CHANNEL_CTX.add(ctx);
+    }
+
+    /**
      * 处理下线
      * @param ctx
      */
     private void handleLogout(ChannelHandlerContext ctx) {
         ChannelId channelId = ctx.channel().id();
-        String userName = CHANNEL_ID2USER.get(channelId);
-        for (String name : USER2CHANNEL_CTX.keySet()) {
-            if (name.equals(userName)) {
+        User user = CHANNEL_ID2USER.get(channelId);
+        for (User u : USER2CHANNEL_CTX.keySet()) {
+            if (Objects.equals(u.getId(), user.getId())) {
                 continue;
             }
             Message message = new Message();
-            message.setSender("[系统通知]");
+            message.setSenderId(0L);
             message.setType(2);
-            message.setContent(userName + "下线了");
-            ChannelHandlerContext context = USER2CHANNEL_CTX.get(name);
+            message.setContent("[系统信息]:"+ user.getUserName() + "下线了");
+            ChannelHandlerContext context = USER2CHANNEL_CTX.get(u);
             context.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
         }
         //移除这个用户
-        USER2CHANNEL_CTX.remove(userName);
+        USER2CHANNEL_CTX.remove(user);
         CONNECTED_CHANNEL_CTX.remove(ctx);
         CHANNEL_ID2USER.remove(channelId);
+        for (CopyOnWriteArrayList<User> users : roomStubMap.values()) {
+            users.remove(user);
+        }
 
     }
 
@@ -116,47 +146,63 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
      */
     private void handleMessage(ChannelHandlerContext ctx, Message message) {
         Integer type = message.getType();
-        String sender = message.getSender();
-        String receiver = message.getReceiver();
-        //TODO Message Type枚举后期
-        if (type == 1) {
-            //建立连接
-            message.setContent(sender+"上线了...");
+        Long senderId = message.getSenderId();
+        Long roomId = message.getRoomId();
+        // receiverId 可能为空
+        Long receiverId = message.getReceiverId();
+        User sender = userService.getUserById(senderId);
+        //====================================建立连接请求=========================================
+        if (type == MessageType.LINK.getCode()) {
+            message.setContent("[系统信息]===>"+ roomId + "号房间: " + sender.getUserName()+"上线了...");
+            // 上线时
             USER2CHANNEL_CTX.put(sender, ctx);
             CHANNEL_ID2USER.put(ctx.channel().id(), sender);
-            // 遍历所有channel, 发送上线通知
-            // TODO 上线后续指定群组
-            for (String userName : USER2CHANNEL_CTX.keySet()) {
-                if (userName.equals(sender)) {
+            if (roomStubMap.get(roomId) != null) {
+                roomStubMap.get(roomId).add(sender);
+            } else {
+                roomStubMap.put(roomId, new CopyOnWriteArrayList<>(new User[]{sender}));
+            }
+            // 获取同一房间在线的用户，遍历这些用户
+            CopyOnWriteArrayList<User> roomUsers = roomStubMap.get(roomId);
+            for (User u : roomUsers) {
+                if (Objects.equals(u.getId(), senderId)) {
                     continue;
                 }
-                ChannelHandlerContext context = USER2CHANNEL_CTX.get(userName);
+                ChannelHandlerContext context = USER2CHANNEL_CTX.get(u);
                 context.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
             }
-        } else if (type == 2) {
-            // 发消息
+
+        //====================================群发=========================================
+        } else if (type == MessageType.GROUP_SEND.getCode()) {
             // 没指定接收者就群发
             // TODO 发消息 后续修改逻辑
-            if (StringUtil.isNullOrEmpty(receiver)) {
-                for (String userName : USER2CHANNEL_CTX.keySet()) {
-                    if (userName.equals(sender)) {
-                        continue;
+            if (receiverId == null) {
+                // 获取同一房间在线的用户，遍历这些用户
+                CopyOnWriteArrayList<User> roomUsers = roomStubMap.get(roomId);
+                if (roomUsers != null) {
+                    message.setContent(sender.getUserName()+"说："+message.getContent());
+                    for (User u : roomUsers) {
+                        if (Objects.equals(u.getId(), senderId)) {
+                            continue;
+                        }
+                        ChannelHandlerContext context = USER2CHANNEL_CTX.get(u);
+                        context.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
                     }
-                    ChannelHandlerContext context = USER2CHANNEL_CTX.get(userName);
-                    context.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
                 }
-            } else {
-                // 指定了单聊
-                if (!USER2CHANNEL_CTX.containsKey(receiver)) {
-                    // 不存在 ===> 下线了
-                    // TODO 下线后任然保存消息
-                    Message msgToSender = new Message();
-                    msgToSender.setSender("[系统通知]");
-                    msgToSender.setReceiver(sender);
-                    msgToSender.setType(2);
-                    msgToSender.setContent("用户已下线, 你的消息未能送达");
-                    ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(msgToSender)));
-                }
+            }
+        //====================================私聊=========================================
+        } else if (type == MessageType.SINGLE_SEND.getCode()) {
+            // 指定了单聊
+            User receiver = userService.getUserById(receiverId);
+            if (!USER2CHANNEL_CTX.containsKey(receiver)) {
+                // 不存在 ===> 下线了
+                // TODO 下线后任然保存消息
+                Message msgToSender = new Message();
+                msgToSender.setSenderId(0L);
+                msgToSender.setSenderId(senderId);
+                msgToSender.setType(2);
+                msgToSender.setContent("[系统信息]:用户已下线, 你的消息未能送达");
+                ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(msgToSender)));
             }
         }
 

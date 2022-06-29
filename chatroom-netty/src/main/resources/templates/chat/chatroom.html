@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form onsubmit="return false;">
+    <input type="text" name="roomId" id="roomId">
+    <button type="button" onclick="createWebSocket()">点击进入聊天室</button>
+    <br>
+    <input type="text" name="message">
+
+    <br>
+    <button type="button" onclick="sendMessage(this.form.message.value)">发送消息</button>
+    <h3>响应如下</h3>
+    <textarea id="responseText" style="width: 500px; height: 300px"></textarea>
+</form>
+
+<script src="/js/jquery-2.2.0.js"></script>
+<script type="text/javascript">
+    var socket;
+    var userId = sessionStorage.getItem('user')
+    socket = new WebSocket("ws://localhost:20000/websocket")
+    socket.onmessage = (event) => {
+        let textarea = document.getElementById('responseText');
+        textarea.value += event.data + "\n";
+    }
+    socket.onopen = (event) => {
+        let textarea = document.getElementById('responseText');
+        textarea.value = "打开WebSocket正常\n";
+    }
+    socket.onclose = (event) => {
+        let textarea = document.getElementById('responseText');
+        textarea.value += "关闭WebSocket\n";
+    }
+
+    function createWebSocket() {
+        let obj = {
+            senderId: userId,
+            type: 1,
+            roomId: document.getElementById('roomId').value,
+            id:Math.round(Math.random() * 10000),
+        };
+        if (socket.readyState === WebSocket.OPEN) {
+            //发送上线消息
+            socket.send(JSON.stringify(obj));
+        }
+    }
+
+    function sendMessage(message) {
+        let obj = {
+            senderId: userId,
+            type: 2,
+            roomId: document.getElementById('roomId').value,
+            content: message,
+            id:Math.round(Math.random() * 10000),
+        };
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(obj));
+        }
+    }
+
+</script>
+</body>
+</html>

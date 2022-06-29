@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class Message implements Serializable {
 
     // TODO 后期优化属性
-
+    private static final long serialVersionUID = 1L;
 
     /**
      * 消息的id
@@ -32,10 +32,24 @@ public class Message implements Serializable {
     /**
      * 消息发送者
      */
-    private String sender;
+    private Long senderId;
 
     /**
      * 消息接收者
      */
-    private String receiver;
+    private Long receiverId;
+
+    /**
+     * 房间号
+     */
+    private Long roomId;
+
+    /**
+     * 时间戳
+     */
+    private Long timeStamp;
+
+    public Message() {
+        timeStamp = System.currentTimeMillis();
+    }
 }

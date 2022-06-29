@@ -7,6 +7,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
  * @createTime 2022/6/28 16:07
  */
 @Component
+@Slf4j
 public class NettyServer {
 
     /**
@@ -48,7 +50,7 @@ public class NettyServer {
             e.printStackTrace();
 
         }
-        System.out.println("启动成功。。。");
+        log.info("Chatroom Server Started.");
         channelFuture.channel().closeFuture();
 
     }

@@ -17,7 +17,17 @@ public class TestController {
 
     @GetMapping("/chatroom")
     public String chatroom() {
-        return "chatroom";
+        return "chat/chatroom";
+    }
+
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login";
     }
 
 }

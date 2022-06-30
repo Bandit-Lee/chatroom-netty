@@ -10,27 +10,20 @@ import org.springframework.data.annotation.Id;
 import java.io.Serializable;
 
 /**
- * 聊天室
  * @author Bandit
- * @createTime 2022/6/29 16:41
+ * @createTime 2022/6/29 23:01
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Room implements Serializable {
-
+public class RoomUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 聊天室主键
-     */
     @Id
     @CreatedBy
-    private Long id;
+    private Long ruId;
+    private Long roomId;
+    private Long userId;
 
-    /**
-     * 聊天室介绍
-     */
-    private String name;
 }

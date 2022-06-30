@@ -1,4 +1,4 @@
-package com.bandit.vo;
+package com.bandit.mvc.vo;
 
 import lombok.*;
 

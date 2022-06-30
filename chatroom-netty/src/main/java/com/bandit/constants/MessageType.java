@@ -1,4 +1,4 @@
-package com.bandit.entity;
+package com.bandit.constants;
 
 /**
  * @author Bandit

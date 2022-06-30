@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class StartLoader implements ApplicationListener<ContextRefreshedEvent> {
 
-
     @Autowired
     NettyServer nettyServer;
 

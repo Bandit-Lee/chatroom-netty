@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+chatroom:
+  server:
+    port: 20000
+    path: /websocket
+
+spring:
+  # thymeleaf
+  thymeleaf:
+    cache: false
+    checktemplatelocation: true
+    enabled: true
+    encoding: UTF-8
+    mode: HTML5
+    prefix: classpath:/templates/
+    suffix: .html
+  datasource:
+    url: jdbc:mysql://localhost:3306/chatroom?serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      max-lifetime: 30000
+      connection-test-query: "SELECT 1"
+  jackson:
+    default-property-inclusion: non_null
+
+logging:
+  level:
+    sql: debug
+    com:
+      bandit: debug
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+my:
+  secretKey: BANDIT666

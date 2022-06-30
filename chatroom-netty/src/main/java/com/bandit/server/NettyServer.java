@@ -55,5 +55,10 @@ public class NettyServer {
 
     }
 
+    public void shutdown() {
+        boosGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+    }
+
 
 }

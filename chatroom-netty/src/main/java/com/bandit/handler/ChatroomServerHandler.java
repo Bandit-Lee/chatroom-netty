@@ -2,10 +2,9 @@ package com.bandit.handler;
 
 import com.alibaba.fastjson.JSON;
 import com.bandit.entity.Message;
-import com.bandit.entity.MessageType;
+import com.bandit.constants.MessageType;
 import com.bandit.entity.User;
-import com.bandit.service.RoomServiceImpl;
-import com.bandit.service.UserServiceImpl;
+import com.bandit.mvc.service.impl.UserServiceImpl;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +27,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
     @Autowired
-    UserServiceImpl userService;
+    UserServiceImpl userServiceImpl;
 
-    @Autowired
-    RoomServiceImpl roomService;
 
     /**
      * 用户到 Channel上下文的映射
@@ -150,7 +147,7 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
         Long roomId = message.getRoomId();
         // receiverId 可能为空
         Long receiverId = message.getReceiverId();
-        User sender = userService.getUserById(senderId);
+        User sender = userServiceImpl.getUserById(senderId);
         //====================================建立连接请求=========================================
         if (type == MessageType.LINK.getCode()) {
             message.setContent("[系统信息]===>"+ roomId + "号房间: " + sender.getUserName()+"上线了...");
@@ -193,7 +190,7 @@ public class ChatroomServerHandler extends SimpleChannelInboundHandler<TextWebSo
         //====================================私聊=========================================
         } else if (type == MessageType.SINGLE_SEND.getCode()) {
             // 指定了单聊
-            User receiver = userService.getUserById(receiverId);
+            User receiver = userServiceImpl.getUserById(receiverId);
             if (!USER2CHANNEL_CTX.containsKey(receiver)) {
                 // 不存在 ===> 下线了
                 // TODO 下线后任然保存消息

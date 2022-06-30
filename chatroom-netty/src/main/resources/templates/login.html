@@ -27,14 +27,18 @@
         let postData = JSON.stringify(obj);
         $.ajax({
             method: "post",
-            url: '/user/login',
+            url: '/api/user/login',
             contentType: "application/json",
             dataType: "json",
             data: postData,
-            success: function (data) {
+            success: function (data, status, xhr) {
                 // window.location.href = '/'
+                let headers = xhr.getAllResponseHeaders()
+                let token = xhr.getResponseHeader(`token`)
                 console.log(data)
-                sessionStorage.setItem('user', data.data.user.id);
+                console.log(headers)
+                sessionStorage.setItem('token', token);
+                sessionStorage.setItem('uid', data.data.uid);
             }
         });
     }

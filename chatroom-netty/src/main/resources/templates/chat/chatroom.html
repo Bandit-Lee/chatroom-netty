@@ -20,7 +20,7 @@
 <script src="/js/jquery-2.2.0.js"></script>
 <script type="text/javascript">
     var socket;
-    var userId = sessionStorage.getItem('user')
+    var userId = sessionStorage.getItem('uid')
     socket = new WebSocket("ws://localhost:20000/websocket")
     socket.onmessage = (event) => {
         let textarea = document.getElementById('responseText');

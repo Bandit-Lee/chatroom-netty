@@ -6,11 +6,13 @@
 </head>
 <body>
 首页
-<button type="button" onclick="window.location.href = '/login'">登录</button>
+<button type="button" onclick="window.location.href = '/login'" th:if="uid != null">登录</button>
 
 <br>
 <br>
 <button type="button" onclick="window.location.href = '/chatroom'">进入聊天室</button>
-
+<script type="text/javascript">
+    var uid = sessionStorage.getItem('user');
+</script>
 </body>
 </html>

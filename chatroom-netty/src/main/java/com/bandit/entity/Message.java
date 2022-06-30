@@ -1,6 +1,10 @@
 package com.bandit.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.Id;
 
 import java.io.Serializable;
 
@@ -9,6 +13,7 @@ import java.io.Serializable;
  * @createTime 2022/6/28 16:01
  */
 @Data
+@AllArgsConstructor
 public class Message implements Serializable {
 
     // TODO 后期优化属性
@@ -17,6 +22,8 @@ public class Message implements Serializable {
     /**
      * 消息的id
      */
+    @Id
+    @CreatedBy
     private Long id;
 
     /**

@@ -1,4 +1,4 @@
-package com.bandit.controller;
+package com.bandit.mvc.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * @createTime 2022/6/28 17:43
  */
 @Controller
-public class TestController {
+public class IndexController {
 
     @GetMapping("/test")
     public String test() {
